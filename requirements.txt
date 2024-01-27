@@ -1,0 +1,12 @@
+scipy>=1.8.1
+matplotlib>=3.3.0
+numpy>=1.18.5
+mne>=1.3.1
+ruptures>=1.1.7
+mysql-connector-python>=8.0.26
+joblib>=1.2
+scikit-learn>=1.0.2
+pandas>=1.4.2
+cudatoolkit>=11.6
+cudnn>=8.2
+tensorflow>=2.10
