@@ -15,7 +15,7 @@ import pandas as pd
 import tensorflow as tf
 from typing import List, Tuple, Dict, Any
 from tensorflow.keras.models import load_model
-from CSP import CSPMF
+from CSP1 import CSPMF
 
 
 
