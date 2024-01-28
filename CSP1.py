@@ -11,7 +11,6 @@ def CSPMF(EEG_Signals, label, channels : int, count_feature_vector):
     
 
     cov0 = EEG_Signals[label[:, 0] == 0]
-    print('done')
     cov1 = EEG_Signals[label[:, 0] == 1]
     
     MatrixCov0 = np.zeros((Channel_count, Channel_count, len(cov0)))
