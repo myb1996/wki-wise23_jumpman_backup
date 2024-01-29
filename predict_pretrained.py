@@ -17,10 +17,7 @@ import time
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Predict given Model')
     parser.add_argument('--test_dir', action='store',type=str,default='/shared_data/training_mini')
-    parser.add_argument('--W1_name', action='store',type=str,default='model/W_vis5.npy')
-    parser.add_argument('--W2_name', action='store',type=str,default='model/W_vis4.npy')
-    parser.add_argument('--model1_name', action='store',type=str,default='model/classification_cnn_model_vis5.h5')
-    parser.add_argument('--model2_name', action='store',type=str,default='model/status_cnn_model_vis4.h5')
+    parser.add_argument('--model_name', action='store',type=str,default='model.json')
     parser.add_argument('--allow_fail',action='store_true',default=False)
     args = parser.parse_args()
     
@@ -35,9 +32,7 @@ if __name__ == '__main__':
     for item in dataset:
         id,channels,data,fs,ref_system,eeg_label = item
         try:
-            _prediction = predict_labels(channels, data, fs, ref_system, 
-                                         W1_name=args.W1_name, W2_name=args.W2_name, 
-                                         model1_name=args.model1_name, model2_name=args.model2_name)
+            _prediction = predict_labels(channels,data,fs,ref_system,model_name=args.model_name)
             _prediction["id"] = id
             predictions.append(_prediction)
         except:

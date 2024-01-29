@@ -9,6 +9,7 @@ Skript testet das vortrainierte Modell
 
 import os
 import mne
+# import json
 import pickle
 import numpy as np
 import pandas as pd
@@ -20,10 +21,7 @@ from CSP1 import CSPMF
 
 
 ###Signatur der Methode (Parameter und Anzahl return-Werte) darf nicht verändert werden
-def predict_labels(channels : List[str], data : np.ndarray, fs : float, reference_system: str,
-                    W1_name : str='model/W_vis5.npy', W2_name : str='model/W_vis4.npy',
-                  model1_name : str='model/classification_cnn_model_vis5.h5',
-                  model2_name : str='model/status_cnn_model_vis4.h5') -> Dict[str,Any]:
+def predict_labels(channels : List[str], data : np.ndarray, fs : float, reference_system: str, model_name : str='model.json') -> Dict[str,Any]:
     '''
     Parameters
     ----------
@@ -61,23 +59,19 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
     for i in range(data.shape[0]):
         signal = data[i, :]
 
-        # high-low pass filter
         filtered_signal = mne.filter.filter_data(signal, fs, l_freq=1.0, h_freq=70.0, n_jobs=2, verbose=False)
 
-        # notch filter
         filtered_signal = mne.filter.notch_filter(filtered_signal, fs, freqs=50.0, n_jobs=2, verbose=False)
 
         filtered_data[i, :] = filtered_signal
     data = filtered_data
 
-    desired_channel_count = 19  # desired count of channels
+    desired_channel_count = 19  
     current_channel_count = len(data)
 
     if current_channel_count < desired_channel_count:
         signal = np.empty((19, len(data[0])))
-        # count of channels to fill
         channels_to_add = desired_channel_count - current_channel_count
-        # copy channel[0] to empty channels
         for j in range(channels_to_add):
             signal[i] = data[0]
         data = signal
@@ -86,7 +80,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
     data = np.array(data)
     CSP = np.empty((count_feature_vector1*4, 1))
     # print(W1_name)
-    W1 = np.load(W1_name)
+    W1 = np.load('model/W_vis5.npy')
     #     Project the source signal onto CSP space
     Zi = np.dot(W1,data) # formular:Zi = W*Xi
     #     Use the logarithm of the variance of the projected signal as a feature
@@ -96,9 +90,9 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         CSP[f, :] = np.log(var_Zi[f])
     CSP = CSP.reshape((1, 20, 1))
     
-    model1 = load_model(model1_name)
+    model1 = load_model('model/classification_cnn_model_vis5.h5')
 
-    # prediction
+    # start prediction
     print('---start prediction---')
     predictions = model1.predict(CSP, verbose=0)
     predictions = float(predictions)
@@ -108,13 +102,12 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         seizure_confidence = confidence
         
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction1
-        window_size1 = 10  
-        stride1 = 10 
+        window_size1 = 10 
+        stride1 = 10      
         window_samples1 = window_size1 * fs
 
         predict_result1 = []
         for i in range(0, data.shape[1] - window_samples1 + 1, stride1 * fs):
-            # obtain segmentation
             window_slice = data[:, i:i+window_samples1]
             CSP = np.empty((count_feature_vector1*4, 1))
 
@@ -143,16 +136,15 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         predict_result1 = np.array(predict_result1)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction2
         count_feature_vector2 = 4
-        model2 = load_model(model2_name)
-        W2 = np.load(W2_name)
+        model2 = load_model('model/status_cnn_model_vis4.h5')
+        W2 = np.load('model/W_vis4.npy')
 
         window_size2 = 10 
-        stride2 = 10    
+        stride2 = 10        
         window_samples2 = window_size2 * fs
         predict_result2 = []
 
         for i in range(0, data.shape[1] - window_samples2 + 1, stride2 * fs):
-            # obtain segmentation
             window_slice = data[:, i:i+window_samples2]
             CSP = np.empty((count_feature_vector2*4, 1))
 
@@ -180,13 +172,12 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
 
         predict_result2 = np.array(predict_result2)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction3
-        window_size3 = 1  
-        stride3 = 1   
+        window_size3 = 1 
+        stride3 = 1      
         window_samples3 = window_size3 * fs
         predict_result3 = []
 
         for i in range(0, data.shape[1] - window_samples3 + 1, stride3 * fs):
-            # obtain segmentation
             window_slice = data[:, i:i+window_samples3]
             CSP = np.empty((count_feature_vector1*4, 1))
 
@@ -213,12 +204,11 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         predict_result3 = np.array(predict_result3)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction4
         window_size4 = 1 
-        stride4 = 1  
+        stride4 = 1      
         window_samples4 = window_size4 * fs
         predict_result4 = []
 
         for i in range(0, data.shape[1] - window_samples4 + 1, stride4 * fs):
-            # obtain segmentation
             window_slice = data[:, i:i+window_samples4]
             CSP = np.empty((count_feature_vector2*4, 1))
 
