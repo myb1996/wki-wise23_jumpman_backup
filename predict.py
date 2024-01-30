@@ -166,7 +166,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         stride2 = 10
         window_samples2 = window_size2 * fs
         predict_result2 = []
-        if data.shape[1] - i < stride1 * fs:
+        if data.shape[1] - i < stride2 * fs:
             CSP = np.empty((count_feature_vector1*4, 1))
             #     Project the source signal onto CSP space
             Zi = np.dot(W2,data) # formular:Zi = W*Xi
