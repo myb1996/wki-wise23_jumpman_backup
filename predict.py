@@ -54,33 +54,35 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
     offset_confidence = 0.50   # gibt die Unsicherheit bezüglich des Endes an (optional)
 
 ################################################################################################################################################
+    ### data filter ###
     filtered_data = np.empty_like(data)
-
     for i in range(data.shape[0]):
         signal = data[i, :]
-
+        # High/low-pass filter 1.0-70.0Hz
         filtered_signal = mne.filter.filter_data(signal, fs, l_freq=1.0, h_freq=70.0, n_jobs=2, verbose=False)
-
+        # notch filter 50Hz
         filtered_signal = mne.filter.notch_filter(filtered_signal, fs, freqs=50.0, n_jobs=2, verbose=False)
-
+        # get filtered data
         filtered_data[i, :] = filtered_signal
     data = filtered_data
 
+    ### fill lacked channels ###
     desired_channel_count = 19  
     current_channel_count = len(data)
-
     if current_channel_count < desired_channel_count:
         signal = np.empty((19, len(data[0])))
         channels_to_add = desired_channel_count - current_channel_count
+        # copy signal of channel[0]
         for j in range(channels_to_add):
             signal[i] = data[0]
         data = signal
-        
+    
+    ### get CSP as feature###
     count_feature_vector1 = 5
     data = np.array(data)
-    CSP = np.empty((count_feature_vector1*4, 1))
+    CSP = np.empty((count_feature_vector1*4, 1)) # build CSP
     # print(W1_name)
-    W1 = np.load('model/W_vis5.npy')
+    W1 = np.load('model/W_vis5.npy') # load projection matrix W1
     #     Project the source signal onto CSP space
     Zi = np.dot(W1,data) # formular:Zi = W*Xi
     #     Use the logarithm of the variance of the projected signal as a feature
@@ -90,24 +92,23 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         CSP[f, :] = np.log(var_Zi[f])
     CSP = CSP.reshape((1, 20, 1))
     
-    model1 = load_model('model/classification_cnn_model_vis5.h5')
-
     # start prediction
     print('---start prediction---')
+    model1 = load_model('model/classification_cnn_model_vis5.h5') # load model1
     predictions = model1.predict(CSP, verbose=0)
     predictions = float(predictions)
     
-    if predictions >= 0.5:
+    if predictions >= 0.5: # >=0.5 is seizure
         confidence = 2 * (predictions - 0.5)
-        seizure_confidence = confidence
+        seizure_confidence = confidence # calculate confidence
         
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction1
-        window_size1 = 10
-        stride1 = 10
-        window_samples1 = window_size1 * fs
+        window_size1 = 10 # set window_size1
+        stride1 = 10 # set stride1
+        window_samples1 = window_size1 * fs # the counts of sample in window_size1
         predict_result1 = []
         
-        if data.shape[1] - i < stride1 * fs:
+        if data.shape[1] < stride1 * fs: # if the length of data < window_size1
             CSP = np.empty((count_feature_vector1*4, 1))
             #     Project the source signal onto CSP space
             Zi = np.dot(W1,data) # formular:Zi = W*Xi
@@ -116,19 +117,15 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
 
             for f in range(len(var_Zi)):
                 CSP[f, :] = np.log(var_Zi[f])
-            CSP = CSP.reshape((1, 20, 1))
+            CSP = CSP.reshape((1, 20, 1)) # reshape CSP in order to fit shape of input in CNN
 
             # predict
             prediction = model1.predict(CSP, verbose=0)
             prediction = float(prediction)
-            if prediction >= 0.4:
-                prediction = 1
-                for x in range(int(data.shape[1]/fs)):
-                    predict_result1.append(prediction)
-            else:
-                prediction = 0
-                for x in range(int(data.shape[1]/fs)):
-                    predict_result1.append(prediction)
+            if prediction >= 0.4: # if >=0.4, seizure
+                predict_result1 = np.ones(int(data.shape[1]/fs))
+            else: # if < 0.4, no seizure
+                predict_result1 = np.zeros(int(data.shape[1]/fs))
         else:
             for i in range(0, data.shape[1] - window_samples1 + 1, stride1 * fs):
                 window_slice = data[:, i:i+window_samples1]
@@ -166,7 +163,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         stride2 = 10
         window_samples2 = window_size2 * fs
         predict_result2 = []
-        if data.shape[1] - i < stride2 * fs:
+        if data.shape[1] - i < stride1 * fs:
             CSP = np.empty((count_feature_vector1*4, 1))
             #     Project the source signal onto CSP space
             Zi = np.dot(W2,data) # formular:Zi = W*Xi
@@ -181,13 +178,9 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
             prediction = model2.predict(CSP, verbose=0)
             prediction = float(prediction)
             if prediction >= 0.4:
-                prediction = 1
-                for x in range(int(data.shape[1]/fs)):
-                    predict_result1.append(prediction)
+                predict_result2 = np.ones(int(data.shape[1]/fs))
             else:
-                prediction = 0
-                for x in range(int(data.shape[1]/fs)):
-                    predict_result1.append(prediction)
+                predict_result2 = np.zeros(int(data.shape[1]/fs))
         else:
             for i in range(0, data.shape[1] - window_samples2 + 1, stride2 * fs):
                 window_slice = data[:, i:i+window_samples2]
