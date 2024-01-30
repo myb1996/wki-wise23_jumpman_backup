@@ -102,17 +102,15 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         seizure_confidence = confidence
         
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction1
-        window_size1 = 10 
-        stride1 = 10      
+        window_size1 = 10
+        stride1 = 10
         window_samples1 = window_size1 * fs
-
         predict_result1 = []
-        for i in range(0, data.shape[1] - window_samples1 + 1, stride1 * fs):
-            window_slice = data[:, i:i+window_samples1]
+        
+        if data.shape[1] - i < stride1 * fs:
             CSP = np.empty((count_feature_vector1*4, 1))
-
             #     Project the source signal onto CSP space
-            Zi = np.dot(W1,window_slice) # formular:Zi = W*Xi
+            Zi = np.dot(W1,data) # formular:Zi = W*Xi
             #     Use the logarithm of the variance of the projected signal as a feature
             var_Zi = np.var(Zi,1)
 
@@ -122,16 +120,41 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
 
             # predict
             prediction = model1.predict(CSP, verbose=0)
-            predictions = float(predictions)
-
+            prediction = float(prediction)
             if prediction >= 0.4:
                 prediction = 1
-                for x in range(window_size1):
+                for x in range(int(data.shape[1]/fs)):
                     predict_result1.append(prediction)
             else:
                 prediction = 0
-                for x in range(window_size1):
+                for x in range(int(data.shape[1]/fs)):
                     predict_result1.append(prediction)
+        else:
+            for i in range(0, data.shape[1] - window_samples1 + 1, stride1 * fs):
+                window_slice = data[:, i:i+window_samples1]
+                CSP = np.empty((count_feature_vector1*4, 1))
+
+                #     Project the source signal onto CSP space
+                Zi = np.dot(W1,window_slice) # formular:Zi = W*Xi
+                #     Use the logarithm of the variance of the projected signal as a feature
+                var_Zi = np.var(Zi,1)
+
+                for f in range(len(var_Zi)):
+                    CSP[f, :] = np.log(var_Zi[f])
+                CSP = CSP.reshape((1, 20, 1))
+
+                # predict
+                prediction1 = model1.predict(CSP, verbose=0)
+                prediction1 = float(prediction1)
+
+                if prediction1 >= 0.4:
+                    prediction1 = 1
+                    for x in range(window_size1):
+                        predict_result1.append(prediction1)
+                else:
+                    prediction1 = 0
+                    for x in range(window_size1):
+                        predict_result1.append(prediction1)
 
         predict_result1 = np.array(predict_result1)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction2
@@ -139,17 +162,14 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         model2 = load_model('model/status_cnn_model_vis4.h5')
         W2 = np.load('model/W_vis4.npy')
 
-        window_size2 = 10 
-        stride2 = 10        
+        window_size2 = 10
+        stride2 = 10
         window_samples2 = window_size2 * fs
         predict_result2 = []
-
-        for i in range(0, data.shape[1] - window_samples2 + 1, stride2 * fs):
-            window_slice = data[:, i:i+window_samples2]
-            CSP = np.empty((count_feature_vector2*4, 1))
-
+        if data.shape[1] - i < stride1 * fs:
+            CSP = np.empty((count_feature_vector1*4, 1))
             #     Project the source signal onto CSP space
-            Zi = np.dot(W2,window_slice) # formular:Zi = W*Xi
+            Zi = np.dot(W2,data) # formular:Zi = W*Xi
             #     Use the logarithm of the variance of the projected signal as a feature
             var_Zi = np.var(Zi,1)
 
@@ -159,16 +179,42 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
 
             # predict
             prediction = model2.predict(CSP, verbose=0)
-            predictions = float(predictions)
-
-            if prediction >= 0.35:
+            prediction = float(prediction)
+            if prediction >= 0.4:
                 prediction = 1
-                for m in range(window_size2):
-                    predict_result2.append(prediction)
+                for x in range(int(data.shape[1]/fs)):
+                    predict_result1.append(prediction)
             else:
                 prediction = 0
-                for n in range(window_size2):
-                    predict_result2.append(prediction)
+                for x in range(int(data.shape[1]/fs)):
+                    predict_result1.append(prediction)
+        else:
+            for i in range(0, data.shape[1] - window_samples2 + 1, stride2 * fs):
+                window_slice = data[:, i:i+window_samples2]
+                CSP = np.empty((count_feature_vector2*4, 1))
+
+                #     Project the source signal onto CSP space
+                Zi = np.dot(W2,window_slice) # formular:Zi = W*Xi
+                #     Use the logarithm of the variance of the projected signal as a feature
+                var_Zi = np.var(Zi,1)
+
+                for f in range(len(var_Zi)):
+                    CSP[f, :] = np.log(var_Zi[f])
+                CSP = CSP.reshape((1, 16, 1))
+
+                # predict
+                prediction2 = model2.predict(CSP, verbose=0)
+                prediction2 = float(prediction2)
+
+                if prediction2 >= 0.35:
+                    prediction2 = 1
+                    for m in range(window_size2):
+                        predict_result2.append(prediction2)
+                else:
+                    prediction2 = 0
+                    for n in range(window_size2):
+                        predict_result2.append(prediction2)
+        
 
         predict_result2 = np.array(predict_result2)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction3
@@ -191,15 +237,15 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
             CSP = CSP.reshape((1, 20, 1))
 
             # predict
-            prediction = model1.predict(CSP, verbose=0)
-            predictions = float(predictions)
+            prediction3 = model1.predict(CSP, verbose=0)
+            prediction3 = float(prediction3)
 
-            if prediction >= 0.4:
-                prediction = 1
-                predict_result3.append(prediction)
+            if prediction3 >= 0.4:
+                prediction3 = 1
+                predict_result3.append(prediction3)
             else:
-                prediction = 0
-                predict_result3.append(prediction)
+                prediction3 = 0
+                predict_result3.append(prediction3)
 
         predict_result3 = np.array(predict_result3)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction4
@@ -222,15 +268,15 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
             CSP = CSP.reshape((1, 16, 1))
 
             # predict
-            prediction = model2.predict(CSP, verbose=0)
-            predictions = float(predictions)
+            prediction4 = model2.predict(CSP, verbose=0)
+            prediction4 = float(prediction4)
 
-            if prediction >= 0.35:
-                prediction = 1
-                predict_result4.append(prediction)
+            if prediction4 >= 0.35:
+                prediction4 = 1
+                predict_result4.append(prediction4)
             else:
-                prediction = 0
-                predict_result4.append(prediction)
+                prediction4 = 0
+                predict_result4.append(prediction4)
                 
         
         predict_result4 = np.array(predict_result4)
