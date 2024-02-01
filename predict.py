@@ -69,7 +69,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
     ### fill lacked channels ###
     desired_channel_count = 19  
     current_channel_count = len(data)
-    if current_channel_count < desired_channel_count:
+    if current_channel_count < desired_channel_count: # if lack channels exist
         signal = np.empty((19, len(data[0])))
         channels_to_add = desired_channel_count - current_channel_count
         # copy signal of channel[0]
@@ -90,7 +90,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
 
     for f in range(len(var_Zi)):
         CSP[f, :] = np.log(var_Zi[f])
-    CSP = CSP.reshape((1, 20, 1))
+    CSP = CSP.reshape((1, 20, 1)) # 20 = 5 * 4
     
     # start prediction
     print('---start prediction---')
@@ -98,7 +98,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
     predictions = model1.predict(CSP, verbose=0)
     predictions = float(predictions)
     
-    if predictions >= 0.5: # >=0.5 is seizure
+    if predictions >= 0.5: # first time to judge， if >=0.5 is seizure
         confidence = 2 * (predictions - 0.5)
         seizure_confidence = confidence # calculate confidence
         
@@ -120,15 +120,16 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
             CSP = CSP.reshape((1, 20, 1)) # reshape CSP in order to fit shape of input in CNN
 
             # predict
-            prediction = model1.predict(CSP, verbose=0)
+            prediction = model1.predict(CSP, verbose=0) # apply model1
             prediction = float(prediction)
             if prediction >= 0.4: # if >=0.4, seizure
-                predict_result1 = np.ones(int(data.shape[1]/fs))
+                predict_result1 = np.ones(int(data.shape[1]/fs)) # set every second is "1"
+
             else: # if < 0.4, no seizure
-                predict_result1 = np.zeros(int(data.shape[1]/fs))
+                predict_result1 = np.zeros(int(data.shape[1]/fs)) # set every second is "0"
         else:
-            for i in range(0, data.shape[1] - window_samples1 + 1, stride1 * fs):
-                window_slice = data[:, i:i+window_samples1]
+            for i in range(0, data.shape[1] - window_samples1 + 1, stride1 * fs): # if the length of data >= window_size1
+                window_slice = data[:, i:i+window_samples1] # choose window_slice as signal
                 CSP = np.empty((count_feature_vector1*4, 1))
 
                 #     Project the source signal onto CSP space
@@ -138,7 +139,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
 
                 for f in range(len(var_Zi)):
                     CSP[f, :] = np.log(var_Zi[f])
-                CSP = CSP.reshape((1, 20, 1))
+                CSP = CSP.reshape((1, 20, 1)) # 20 = 5 * 4
 
                 # predict
                 prediction1 = model1.predict(CSP, verbose=0)
@@ -147,23 +148,23 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
                 if prediction1 >= 0.4:
                     prediction1 = 1
                     for x in range(window_size1):
-                        predict_result1.append(prediction1)
+                        predict_result1.append(prediction1) # set every 10 seconds are all "1", then stack all of them
                 else:
                     prediction1 = 0
                     for x in range(window_size1):
-                        predict_result1.append(prediction1)
+                        predict_result1.append(prediction1) # set every 10 seconds are all "0", then stack all of them
 
-        predict_result1 = np.array(predict_result1)
+        predict_result1 = np.array(predict_result1) # transfer list to array
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction2
-        count_feature_vector2 = 4
-        model2 = load_model('model/status_cnn_model_vis4.h5')
-        W2 = np.load('model/W_vis4.npy')
-
-        window_size2 = 10
-        stride2 = 10
-        window_samples2 = window_size2 * fs
+        count_feature_vector2 = 4 # choose 4 vectors to build CSP2
+        model2 = load_model('model/status_cnn_model_vis4.h5') # load model2
+        W2 = np.load('model/W_vis4.npy') # load projection matrix W2
+        window_size2 = 10 # set window_size2
+        stride2 = 10 # set stride2
+        window_samples2 = window_size2 * fs # the counts of sample in window_size1
         predict_result2 = []
-        if data.shape[1] < stride2 * fs:
+        
+        if data.shape[1] < stride2 * fs: # if the length of data < window_size2
             CSP = np.empty((count_feature_vector2*4, 1))
             #     Project the source signal onto CSP space
             Zi = np.dot(W2,data) # formular:Zi = W*Xi
@@ -172,18 +173,18 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
 
             for f in range(len(var_Zi)):
                 CSP[f, :] = np.log(var_Zi[f])
-            CSP = CSP.reshape((1, 16, 1))
+            CSP = CSP.reshape((1, 16, 1)) # 16 = 4 * 4
 
             # predict
             prediction = model2.predict(CSP, verbose=0)
             prediction = float(prediction)
             if prediction >= 0.4:
-                predict_result2 = np.ones(int(data.shape[1]/fs))
+                predict_result2 = np.ones(int(data.shape[1]/fs)) # set every 10 seconds are all "1", then stack all of them
             else:
                 predict_result2 = np.zeros(int(data.shape[1]/fs))
         else:
-            for i in range(0, data.shape[1] - window_samples2 + 1, stride2 * fs):
-                window_slice = data[:, i:i+window_samples2]
+            for i in range(0, data.shape[1] - window_samples2 + 1, stride2 * fs): # if the length of data >= window_size2
+                window_slice = data[:, i:i+window_samples2] # choose window_slice as signal
                 CSP = np.empty((count_feature_vector2*4, 1))
 
                 #     Project the source signal onto CSP space
@@ -193,7 +194,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
 
                 for f in range(len(var_Zi)):
                     CSP[f, :] = np.log(var_Zi[f])
-                CSP = CSP.reshape((1, 16, 1))
+                CSP = CSP.reshape((1, 16, 1)) # 16 = 4 * 4
 
                 # predict
                 prediction2 = model2.predict(CSP, verbose=0)
@@ -202,15 +203,16 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
                 if prediction2 >= 0.35:
                     prediction2 = 1
                     for m in range(window_size2):
-                        predict_result2.append(prediction2)
+                        predict_result2.append(prediction2) # set every 10 seconds are all "1", then stack all of them
                 else:
                     prediction2 = 0
                     for n in range(window_size2):
-                        predict_result2.append(prediction2)
+                        predict_result2.append(prediction2) # set every 10 seconds are all "0", then stack all of them
         
 
-        predict_result2 = np.array(predict_result2)
+        predict_result2 = np.array(predict_result2) # transfer list to array
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction3
+    # similar with prediction1, just window_size and stride are both 1
         window_size3 = 1 
         stride3 = 1      
         window_samples3 = window_size3 * fs
@@ -227,7 +229,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
 
             for f in range(len(var_Zi)):
                 CSP[f, :] = np.log(var_Zi[f])
-            CSP = CSP.reshape((1, 20, 1))
+            CSP = CSP.reshape((1, 20, 1)) # 20 = 5 * 4
 
             # predict
             prediction3 = model1.predict(CSP, verbose=0)
@@ -241,7 +243,8 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
                 predict_result3.append(prediction3)
 
         predict_result3 = np.array(predict_result3)
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction4
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction4
+    # similar with prediction2, just window_size and stride are both 1
         window_size4 = 1 
         stride4 = 1      
         window_samples4 = window_size4 * fs
@@ -258,7 +261,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
 
             for f in range(len(var_Zi)):
                 CSP[f, :] = np.log(var_Zi[f])
-            CSP = CSP.reshape((1, 16, 1))
+            CSP = CSP.reshape((1, 16, 1)) # 16 = 4 * 4
 
             # predict
             prediction4 = model2.predict(CSP, verbose=0)
@@ -273,7 +276,7 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
                 
         
         predict_result4 = np.array(predict_result4)
-        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~      
         predict_result = predict_result1 * predict_result2 * predict_result3[:len(predict_result1)] * predict_result4[:len(predict_result1)]
         predict_result[0] = 0
         predict_result[-1] = 0
