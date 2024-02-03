@@ -103,8 +103,8 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         seizure_confidence = confidence # calculate confidence
         
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction1
-        window_size1 = 10 # set window_size1
-        stride1 = 10 # set stride1
+        window_size1 = 5 # set window_size1
+        stride1 = 5 # set stride1
         window_samples1 = window_size1 * fs # the counts of sample in window_size1
         predict_result1 = []
         
@@ -159,8 +159,8 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         count_feature_vector2 = 4 # choose 4 vectors to build CSP2
         model2 = load_model('model/status_cnn_model_vis4.h5') # load model2
         W2 = np.load('model/W_vis4.npy') # load projection matrix W2
-        window_size2 = 10 # set window_size2
-        stride2 = 10 # set stride2
+        window_size2 = 5 # set window_size2
+        stride2 = 5 # set stride2
         window_samples2 = window_size2 * fs # the counts of sample in window_size1
         predict_result2 = []
         
@@ -211,99 +211,100 @@ def predict_labels(channels : List[str], data : np.ndarray, fs : float, referenc
         
 
         predict_result2 = np.array(predict_result2) # transfer list to array
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction3
-    # similar with prediction1, just window_size and stride are both 1
-        window_size3 = 1 
-        stride3 = 1      
-        window_samples3 = window_size3 * fs
-        predict_result3 = []
+#     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction3
+#     # similar with prediction1, just window_size and stride are both 1
+#         window_size3 = 1 
+#         stride3 = 1      
+#         window_samples3 = window_size3 * fs
+#         predict_result3 = []
 
-        for i in range(0, data.shape[1] - window_samples3 + 1, stride3 * fs):
-            window_slice = data[:, i:i+window_samples3]
-            CSP = np.empty((count_feature_vector1*4, 1))
+#         for i in range(0, data.shape[1] - window_samples3 + 1, stride3 * fs):
+#             window_slice = data[:, i:i+window_samples3]
+#             CSP = np.empty((count_feature_vector1*4, 1))
 
-            #     Project the source signal onto CSP space
-            Zi = np.dot(W1,window_slice) # formular:Zi = W*Xi
-            #     Use the logarithm of the variance of the projected signal as a feature
-            var_Zi = np.var(Zi,1)
+#             #     Project the source signal onto CSP space
+#             Zi = np.dot(W1,window_slice) # formular:Zi = W*Xi
+#             #     Use the logarithm of the variance of the projected signal as a feature
+#             var_Zi = np.var(Zi,1)
 
-            for f in range(len(var_Zi)):
-                CSP[f, :] = np.log(var_Zi[f])
-            CSP = CSP.reshape((1, 20, 1)) # 20 = 5 * 4
+#             for f in range(len(var_Zi)):
+#                 CSP[f, :] = np.log(var_Zi[f])
+#             CSP = CSP.reshape((1, 20, 1)) # 20 = 5 * 4
 
-            # predict
-            prediction3 = model1.predict(CSP, verbose=0)
-            prediction3 = float(prediction3)
+#             # predict
+#             prediction3 = model1.predict(CSP, verbose=0)
+#             prediction3 = float(prediction3)
 
-            if prediction3 >= 0.4:
-                prediction3 = 1
-                predict_result3.append(prediction3)
-            else:
-                prediction3 = 0
-                predict_result3.append(prediction3)
+#             if prediction3 >= 0.4:
+#                 prediction3 = 1
+#                 predict_result3.append(prediction3)
+#             else:
+#                 prediction3 = 0
+#                 predict_result3.append(prediction3)
 
-        predict_result3 = np.array(predict_result3)
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction4
-    # similar with prediction2, just window_size and stride are both 1
-        window_size4 = 1 
-        stride4 = 1      
-        window_samples4 = window_size4 * fs
-        predict_result4 = []
+#         predict_result3 = np.array(predict_result3)
+#     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~prediction4
+#     # similar with prediction2, just window_size and stride are both 1
+#         window_size4 = 1 
+#         stride4 = 1      
+#         window_samples4 = window_size4 * fs
+#         predict_result4 = []
 
-        for i in range(0, data.shape[1] - window_samples4 + 1, stride4 * fs):
-            window_slice = data[:, i:i+window_samples4]
-            CSP = np.empty((count_feature_vector2*4, 1))
+#         for i in range(0, data.shape[1] - window_samples4 + 1, stride4 * fs):
+#             window_slice = data[:, i:i+window_samples4]
+#             CSP = np.empty((count_feature_vector2*4, 1))
 
-            #     Project the source signal onto CSP space
-            Zi = np.dot(W2,window_slice) # formular:Zi = W*Xi
-            #     Use the logarithm of the variance of the projected signal as a feature
-            var_Zi = np.var(Zi,1)
+#             #     Project the source signal onto CSP space
+#             Zi = np.dot(W2,window_slice) # formular:Zi = W*Xi
+#             #     Use the logarithm of the variance of the projected signal as a feature
+#             var_Zi = np.var(Zi,1)
 
-            for f in range(len(var_Zi)):
-                CSP[f, :] = np.log(var_Zi[f])
-            CSP = CSP.reshape((1, 16, 1)) # 16 = 4 * 4
+#             for f in range(len(var_Zi)):
+#                 CSP[f, :] = np.log(var_Zi[f])
+#             CSP = CSP.reshape((1, 16, 1)) # 16 = 4 * 4
 
-            # predict
-            prediction4 = model2.predict(CSP, verbose=0)
-            prediction4 = float(prediction4)
+#             # predict
+#             prediction4 = model2.predict(CSP, verbose=0)
+#             prediction4 = float(prediction4)
 
-            if prediction4 >= 0.35:
-                prediction4 = 1
-                predict_result4.append(prediction4)
-            else:
-                prediction4 = 0
-                predict_result4.append(prediction4)
+#             if prediction4 >= 0.35:
+#                 prediction4 = 1
+#                 predict_result4.append(prediction4)
+#             else:
+#                 prediction4 = 0
+#                 predict_result4.append(prediction4)
                 
         
-        predict_result4 = np.array(predict_result4)
+#         predict_result4 = np.array(predict_result4)
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~      
-        predict_result = predict_result1 * predict_result2 * predict_result3[:len(predict_result1)] * predict_result4[:len(predict_result1)]
-        predict_result[0] = 0
-        predict_result[-1] = 0
-        final_result = np.copy(predict_result)
+        predict_result = predict_result1 * predict_result2 # * predict_result3[:len(predict_result1)] * predict_result4[:len(predict_result1)]
+        # predict_result[0] = 0
+        # predict_result[-1] = 0
+        # final_result = np.copy(predict_result)
 
+        # # find the first '1' and last '1' as onset/offset
+        # for i in range(1, len(predict_result) - 1):
+        #     if predict_result[i] == 1 and predict_result[i - 1] == 0 and predict_result[i + 1] == 0:
+        #         final_result[i] = 0
+        # # print(final_result.shape)
+        
         # find the first '1' and last '1' as onset/offset
-        for i in range(1, len(predict_result) - 1):
-            if predict_result[i] == 1 and predict_result[i - 1] == 0 and predict_result[i + 1] == 0:
-                final_result[i] = 0
-        # print(final_result.shape)
+        indices = np.where(predict_result == 1)[0]
+        # if len(indices) > 3:
+        onset = indices[0] + 1
+        offset = indices[-1] + 1
+        seizure_present = True
+        print('seizure')
+        print('seizure confidence:', seizure_confidence)
+        print('onset:', onset)
+        print('offset:', offset)
 
-        indices = np.where(final_result == 1)[0]
-        if len(indices) > 3:
-            onset = indices[0] + 1
-            offset = indices[-1] + 1
-            seizure_present = True
-            print('seizure')
-            print('seizure confidence:', seizure_confidence)
-            print('onset:', onset)
-            print('offset:', offset)
-
-        else:
-            onset = 0.0
-            offset = 0.0
-            seizure_present = False
-            print('no seizure')
-            print('no seizure confidence:', seizure_confidence)
+        # else:
+        #     onset = 0.0
+        #     offset = 0.0
+        #     seizure_present = False
+        #     print('no seizure')
+        #     print('no seizure confidence:', seizure_confidence)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     else:
         seizure_present = False
