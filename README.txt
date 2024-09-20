@@ -26,9 +26,6 @@ Könnten Sie in score.py Zeile 211:
 die entsprechende REFERENCE.csv von test Sample erstellen.
 
 
-
-wettbewerb haben Sie schon gehabt. Bitte hier hinzufügen.
-
 Die benötigten Bibliotheken und Module sowie deren Versionen habe ich bereits in requiements.txt geschrieben. Falls während der Installation Probleme auftritten, installieren Sie sie bitte entsprechend der Version manuell.
 
 Wenn Sie Fragen haben, kontaktieren Sie mich bitte rechtzeitig.
